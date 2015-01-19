@@ -1,12 +1,11 @@
-import os
-from optparse import make_option
-
+from django import db
 from django.core.management import BaseCommand, call_command, CommandError
 from django.core.management.commands.dumpdata import Command as DumpDataCommand
 from django.conf import settings
 from django.db import router, connections
 from django.utils.importlib import import_module
 from django.utils.module_loading import module_has_submodule
+from django import get_version
 
 
 FIXTURE_DATABASE = "__fixture_gen__"
@@ -107,7 +106,11 @@ class Command(BaseCommand):
                 **dict(options, verbosity=0, database=FIXTURE_DATABASE)
             )
         finally:
-            del settings.DATABASES[FIXTURE_DATABASE]
+            django_version = get_version()
+            if django_version < '1.4':
+                del settings.DATABASES[FIXTURE_DATABASE]
+            else:
+                db.connections[FIXTURE_DATABASE].close()
             if isinstance(connections._connections, dict):
                 del connections._connections[FIXTURE_DATABASE]
             else:
